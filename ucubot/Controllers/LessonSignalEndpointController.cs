@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -32,14 +32,14 @@ namespace ucubot.Controllers
             adapt.Fill(dataTable);
             conn.Close();
             var lst = new List<LessonSignalDto>();
-            foreach (DataRow row in dataTable.Tables[0].Rows){
+            foreach (DataRow row in dataTable.Rows){
                     var elem = new LessonSignalDto{
                         Id = (int) row["id"],
                         Timestamp = (DateTime) row["timestamp1"],
                         Type = (LessonSignalType) row["SignalType"],
                         UserId = (string) row["UserId"]
                     };
-                    lst.add(elem);
+                    lst.Add(elem);
                 }
             return lst;
         }
@@ -50,19 +50,22 @@ namespace ucubot.Controllers
             var connectionString = _configuration.GetConnectionString("BotDatabase");
             // TODO: add query to get a signal by the given id
             var conn = new MySqlConnection(connectionString);
-            var adapt = new MySqlDataAdapter("SELECT * FROM lesson_signal WHERE id = @id",conn);
-            command.Parameters.AddWithValue("id",id);
+            var com = "SELECT * FROM lesson_signal WHERE id = @id;";
+            var cmd = new MySqlCommand(com, conn);
+            cmd.Parameters.AddWithValue("id", id);
+            var adapt = new MySqlDataAdapter(cmd);
             var dataTable = new DataTable();
             conn.Open();
             adapt.Fill(dataTable);
             conn.Close();
+            if(dataTable.Rows.Count > 0){
             var row = dataTable.Rows[0];
             var elem = new LessonSignalDto{
                 Timestamp = (DateTime) row["timestamp1"],
                 Type = (LessonSignalType) row["SignalType"],
                 UserId = (string) row["UserId"]
             };
-            if(dataTable.Rows.Count >= 0){
+            
                 return elem;
             }
             return null;
@@ -89,6 +92,7 @@ namespace ucubot.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> RemoveSignal(long id)
         {   
+            var connectionString = _configuration.GetConnectionString("BotDatabase");
             var com =  "DELETE FROM lesson_signal WHERE id=@id";
             var conn = new MySqlConnection(connectionString);
             var cmd = new MySqlCommand(com, conn);
